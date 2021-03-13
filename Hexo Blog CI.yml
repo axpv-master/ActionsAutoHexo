@@ -1,1 +1,39 @@
+name: Hexo Blog CI
 
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Setup Hexo
+        run: |
+          git clone https://github.com/${{ secrets.USER }}/${{ secrets.NAME }}
+          sudo npm install hexo-cli -g
+          hexo init blog
+          rm blog/_config.landscape.yml
+          rm blog/_config.yml
+          rm blog/package.json
+          rm blog/scaffolds/*
+          rm blog/source/_posts/*
+          mv auto-hexo-blog/_config.landscape.yml blog
+          mv auto-hexo-blog/_config.yml blog
+          mv auto-hexo-blog/package.json blog
+          mv auto-hexo-blog/scaffolds/* blog/scaffolds
+          mv auto-hexo-blog/source/_posts/* blog/source/_posts/*
+          cd blog/themes
+          git clone ${{ secrets.THEME }}
+          cd ../
+          npm install ${{ secrets.CI }} --save
+          hexo d
+          cd ../
+          mkdir -p ~/.ssh/
+          echo "${{ secrets.KEY }}" > ~/.ssh/id_rsa 
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan github.com >> ~/.ssh/known_hosts
+          cd blog
+          hexo d
