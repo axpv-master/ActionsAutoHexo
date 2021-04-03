@@ -20,20 +20,21 @@ jobs:
           rm blog/package.json
           rm blog/scaffolds/*
           rm blog/source/_posts/*
-          mv auto-hexo-blog/_config.landscape.yml blog
-          mv auto-hexo-blog/_config.yml blog
-          mv auto-hexo-blog/package.json blog
-          mv auto-hexo-blog/scaffolds/* blog/scaffolds
-          mv auto-hexo-blog/source/_posts/* blog/source/_posts/*
+          mv ${{ secrets.NAME }}/_config.landscape.yml blog
+          mv ${{ secrets.NAME }}/_config.yml blog
+          mv ${{ secrets.NAME }}/package.json blog
+          mv ${{ secrets.NAME }}/scaffolds/* blog/scaffolds
+          mv ${{ secrets.NAME }}/source/_posts/* blog/source/_posts/*
           cd blog/themes
           git clone ${{ secrets.THEME }}
           cd ../
-          npm install ${{ secrets.CI }} --save
+          npm install ${{ secrets.NPM }} --save
           hexo d
-          cd ../
-          mkdir -p ~/.ssh/
-          echo "${{ secrets.KEY }}" > ~/.ssh/id_rsa 
-          chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan github.com >> ~/.ssh/known_hosts
-          cd blog
-          hexo d
+          
+      - name: Deploy
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+         personal_token: ${{ secrets.TOKEN }}
+         publish_dir: ./public
+         external_repository: ${{ secrets.USER }}/${{ secrets.DEPLAYNAME }}
+         publish_branch: master
