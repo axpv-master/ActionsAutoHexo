@@ -25,7 +25,7 @@ jobs:
           npm install
       - name: Generate public files
         run: |
-          git clone https://github.com/${{ secrets.CONFIG }}
+          git clone https://github.com/${{ secrets.CONFIG }} config
           sudo npm install hexo-cli -g
           hexo init blog
           rm ./blog/_config.landscape.yml
@@ -33,11 +33,11 @@ jobs:
           rm ./blog/package.json
           rm ./blog/scaffolds/*
           rm ./blog/source/_posts/*
-          mv ./${NAME}/_config.landscape.yml ./blog
-          mv ./${NAME}/_config.yml ./blog
-          mv ./${NAME}/package.json ./blog
-          mv ./${NAME}/scaffolds/* ./blog/scaffolds
-          mv ./${NAME}/source/_posts/* ./blog/source/_posts/
+          mv ./config/_config.landscape.yml ./blog
+          mv ./config/_config.yml ./blog
+          mv ./config/package.json ./blog
+          mv ./config/scaffolds/* ./blog/scaffolds
+          mv ./config/_posts/* ./blog/source/_posts/
           cd blog/themes
           git clone ${{ secrets.THEMES }}
           hexo g
