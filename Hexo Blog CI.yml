@@ -1,4 +1,4 @@
-name: CI Hexo Blog Deploy First
+name: ActionsAutoHexo
 
 on:
   push:
@@ -7,12 +7,10 @@ on:
 
 jobs:
   Deploy-Pages:
-    name: Deploy Hexo Public To Pages
+    name: Actions Deploy Hexo
     runs-on: ubuntu-latest
 
     steps:
-      # check it to your workflow can access it
-      # from: https://github.com/actions/checkout
       - name: Checkout Repository master branch
         uses: actions/checkout@master
 
@@ -21,46 +19,35 @@ jobs:
         with:
           node-version: "10.x"
 
-      - name: Setup Git Infomation
-        run: |
-          git config --global user.name 'CI' 
-          git config --global user.email 'CI@ci.com'
-
-      - name: Get Latest Commit Message
-        run: |
-          git log --pretty=format:"%s from Github Actions at `date +"%Y-%m-%d %H:%M:%S"`" --date=short -n 1  > commit-message.log
-
       - name: Setup Hexo Dependencies
         run: |
           npm install hexo-cli -g
           npm install
-
       - name: Generate public files
         run: |
-          git clone https://github.com/${{ secrets.USER }}/${{ secrets.NAME }}
+          git clone https://github.com/${{ secrets.CONFIG }}
           sudo npm install hexo-cli -g
           hexo init blog
-          rm blog/_config.landscape.yml
-          rm blog/_config.yml
-          rm blog/package.json
-          rm blog/scaffolds/*
-          rm blog/source/_posts/*
-          mv ${{ secrets.NAME }}/_config.landscape.yml blog
-          mv ${{ secrets.NAME }}/_config.yml blog
-          mv ${{ secrets.NAME }}/package.json blog
-          mv ${{ secrets.NAME }}/scaffolds/* blog/scaffolds
-          mv ${{ secrets.NAME }}/source/_posts/* blog/source/_posts/*
-          cd blog
-          npm ${{ secrets.NPM }} --save
+          rm ./blog/_config.landscape.yml
+          rm ./blog/_config.yml
+          rm ./blog/package.json
+          rm ./blog/scaffolds/*
+          rm ./blog/source/_posts/*
+          mv ./${NAME}/_config.landscape.yml ./blog
+          mv ./${NAME}/_config.yml ./blog
+          mv ./${NAME}/package.json ./blog
+          mv ./${NAME}/scaffolds/* ./blog/scaffolds
+          mv ./${NAME}/source/_posts/* ./blog/source/_posts/
+          cd blog/themes
+          git clone ${{ secrets.THEMES }}
           hexo g
-
-      - name: Deploy To Github Pages
-        env:
-          Github_Pages: ${{ secrets.DEPLAY }}
-          Github_Token: ${{ secrets.API }}
-        run: |
-          mv .git/ ./public/
-          cd ./public/
-          git add .
-          git commit -F ../commit-message.log
-          git push --force --quiet "https://${Github_Token}@${Github_Pages}" master:master
+          cd ../
+          ${{ secrets.A }}
+          rm .gitignore
+      - name: deploy
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          personal_token: ${{ secrets.API }}
+          external_repository: ${{ secrets.DEPLOY }}
+          publish_branch: master
+          publish_dir: ./blog/public/
