@@ -1,40 +1,74 @@
-name: Hexo Blog CI
+name: CI
 
 on:
   push:
     branches:
       - master
 
+env:
+  GIT_USER: axpv-master
+  GIT_EMAIL: axpv-master@axpv.ml
+  THEME_REPO: https://github.com/axpv-master/hexo-theme-material.git
+  THEME_BRANCH: master
+  DEPLOY_REPO: https://github.com/axpv-master/axpv-master.github.io
+  DEPLOY_BRANCH: master
+  #env.GIT_USER 为 Hexo 编译后使用此 git 用户部署到仓库。
+  #env.GIT_EMAIL 为 Hexo 编译后使用此 git 邮箱部署到仓库。
+  #env.THEME_REPO 为您的 Hexo 所使用的主题的仓库。
+  #env.GIT_USER 为 Hexo 编译后使用此 git 用户部署到仓库。
+  #env.THEME_BRANCH 为您的 Hexo 所使用的主题仓库的版本，可以是：branch、tag 或者 SHA。
+  #env.DEPLOY_REPO 为 Hexo 编译后要部署的仓库。
+  #env.DEPLOY_BRANCH 为 Hexo 编译后要部署到的分支，例如：master。
+
 jobs:
   build:
+    name: Build on node ${{ matrix.node_version }} and ${{ matrix.os }}
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        node_version: [12.x]
 
     steps:
-      - name: Setup Hexo
-        run: |
-          git clone https://github.com/${{ secrets.USER }}/${{ secrets.NAME }}
-          sudo npm install hexo-cli -g
-          hexo init blog
-          rm blog/_config.landscape.yml
-          rm blog/_config.yml
-          rm blog/package.json
-          rm blog/scaffolds/*
-          rm blog/source/_posts/*
-          mv ${{ secrets.NAME }}/_config.landscape.yml blog
-          mv ${{ secrets.NAME }}/_config.yml blog
-          mv ${{ secrets.NAME }}/package.json blog
-          mv ${{ secrets.NAME }}/scaffolds/* blog/scaffolds
-          mv ${{ secrets.NAME }}/source/_posts/* blog/source/_posts/*
-          cd blog/themes
-          git clone ${{ secrets.THEME }}
-          cd ../
-          npm install ${{ secrets.NPM }} --save
-          hexo d
-          
-      - name: Deploy
-        uses: peaceiris/actions-gh-pages@v3
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Checkout theme repo
+        uses: actions/checkout@v2
         with:
-         personal_token: ${{ secrets.TOKEN }}
-         publish_dir: ./public
-         external_repository: ${{ secrets.USER }}/${{ secrets.DEPLAYNAME }}
-         publish_branch: master
+          repository: ${{ env.THEME_REPO }}
+          ref: ${{ env.THEME_BRANCH }}
+          path: themes/concise
+
+      - name: Checkout deploy repo
+        uses: actions/checkout@v2
+        with:
+          repository: ${{ env.DEPLOY_REPO }}
+          ref: ${{ env.DEPLOY_BRANCH }}
+          path: .deploy_git
+
+      - name: Use Node.js ${{ matrix.node_version }}
+        uses: actions/setup-node@v1
+        with:
+          node-version: ${{ matrix.node_version }}
+
+      - name: Configuration environment
+        env:
+          HEXO_DEPLOY_PRI: ${{secrets.HEXO_DEPLOY_PRI}}
+        run: |
+          sudo timedatectl set-timezone "Asia/Shanghai"
+          mkdir -p ~/.ssh/
+          echo "$HEXO_DEPLOY_PRI" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan github.com >> ~/.ssh/known_hosts
+          git config --global user.name $GIT_USER
+          git config --global user.email $GIT_EMAIL
+          cp _config.theme.yml themes/concise/_config.yml
+
+      - name: Install dependencies
+        run: |
+          npm install
+
+      - name: Deploy hexo
+        run: |
+          npm run deploy
